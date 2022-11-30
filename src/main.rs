@@ -42,12 +42,14 @@ impl TzhParser {
         // there are few strategies for it
             // option_1: is to start from 1, and increment by one until you found it
         
-        let mut page_number:u8 = 1;
+        let mut page_number:u8 = 6;
+        println!("0:::page_number={page_number}");
         let mut found = false;
+        let mut last_page_number = page_number + 5; 
         loop {
             let url:&str = &format!("{}&to_page={}", TzhParser::URL, page_number);
             let response = reqwest::blocking::get(url).expect(&format!("Could not load url {}", url));
-            thread::sleep(Duration::from_millis(2000));   // without sleep, website usually(90%) block after 2 attempts
+            thread::sleep(Duration::from_millis(2000));   // without sleep, website usually(90%) block after 2 attempts, // it can happend eve on first attemp
             let body = response.text().unwrap(); //println!("{}", body);
             let document = Html::parse_document(&body);
 
@@ -57,27 +59,42 @@ impl TzhParser {
             let min_number_of_items_for_page_number = max_number_of_items_for_page_number - 16;
 
             if number_of_items == max_number_of_items_for_page_number {
-                println!("1:::Page {page_number} there is more than {number_of_items} items on sale.");
+                if last_page_number == page_number + 1 {
+                    println!("1:::special_case.");
+                    found = true;
+                }
+                else {
+                    println!("1:::page {page_number} there is more than {number_of_items} items on sale.");
+                    last_page_number = page_number;
+                    page_number = page_number + 1;
+                }
             }
             // between check
             else if number_of_items > min_number_of_items_for_page_number && number_of_items < max_number_of_items_for_page_number {
-                println!("FOUND: {} {}", page_number, number_of_items);
+                println!("2:::page is {} with {} items", page_number, number_of_items);
                 found = true;
             }
             else if number_of_items == 16 {
-                println!("2:::NOT_IMPLEMENTED");
+                if page_number == 1 {
+                    last_page_number = page_number;
+                    page_number = page_number + 1;
+                    println!("3:::page_number +1 to page_number={page_number}");
+                }
+                else {
+                    last_page_number = page_number;
+                    page_number = page_number - 1;
+                    println!("3:::page_number -1 to page_number={page_number}");
+                }
+
             }
             else {
                 eprintln!("ERROR number_of_items={number_of_items}, this is UNEXPECTED, CHECK !!!");
                 process::exit(1);
 
             }
-            
+
             if found {
                 return document
-            }
-            else {
-                page_number = page_number + 1;
             }
         }
 
@@ -160,7 +177,7 @@ fn main() {
 
     let items = p.get_items();
     //println!("{:#?}", items);
-    println!("Items on sale: {:#?}", items.len());
+    //println!("Items on sale: {:#?}", items.len());
 
 
 }
