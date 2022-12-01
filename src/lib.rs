@@ -44,7 +44,7 @@ impl TzhParser {
         
         let mut page_number:usize = 6;
         println!("0:::page_number={page_number}");
-        let mut correct_page = false;
+        let mut correct_page: bool;
         let mut last_page_number = page_number + 5; 
         loop {
             let url:&str = &format!("{}&to_page={}", TzhParser::URL, page_number);
@@ -73,7 +73,7 @@ impl TzhParser {
                 found = true;
             }
             else {
-                println!("1:::page {page_number} there is more than {number_of_items} items on sale.");
+                println!("1:::page {page_number} there is possibly more than {number_of_items} items on sale.");
                 last_page_number = page_number;
                 page_number = page_number + 1;
             }
@@ -179,11 +179,111 @@ impl TzhParser {
 mod tests {
     use super::*;
 
+    // #[test]
+    // fn test_0() {
+    //     assert!(TzhParser::is_correct_page(1, 0, 6).0);
+    //     // else if number_of_items >= min_number_of_items_for_page_number && number_of_items < max_number_of_items_for_page_number {
+    // }
     #[test]
-    fn test_1_ok() {
+    fn test_n_ok() {
         assert!(TzhParser::is_correct_page(1, 1, 6).0);
         assert!(TzhParser::is_correct_page(1, 8, 6).0);
         assert!(TzhParser::is_correct_page(1, 15, 6).0);
         assert!(!TzhParser::is_correct_page(1, 16, 6).0);   //false
+
+        assert!(TzhParser::is_correct_page(2, 20, 6).0);
+        assert!(TzhParser::is_correct_page(3, 36, 6).0);
+        assert!(TzhParser::is_correct_page(4, 52, 6).0);
+        assert!(TzhParser::is_correct_page(5, 66, 6).0); 
     }
+
+    #[test]
+    fn test_1_up() {
+        let mut correct_page; 
+        let mut page_number = 2;
+        let mut last_page_number = page_number + 5;
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 32, last_page_number);
+        assert!(!correct_page);
+        assert_eq!(page_number, 3);
+        assert_eq!(last_page_number, 2);
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 33, last_page_number);
+        assert!(correct_page);
+        assert_eq!(page_number, 3);
+        assert_eq!(last_page_number, 2);
+
+        correct_page; 
+        page_number = 5;
+        last_page_number = page_number +5 ;
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 80, last_page_number);
+        assert!(!correct_page);
+        assert_eq!(page_number, 6);
+        assert_eq!(last_page_number, 5);
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 90, last_page_number);
+        assert!(correct_page);
+        assert_eq!(page_number, 6);
+        assert_eq!(last_page_number, 5);
+    }
+
+    #[test]
+    fn test_1_down() {
+        let mut correct_page; 
+        let mut page_number = 2;
+        let mut last_page_number = page_number + 5;
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 16, last_page_number);
+        assert!(!correct_page);
+        assert_eq!(page_number, 1);
+        assert_eq!(last_page_number, 2);
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 10, last_page_number);
+        assert!(correct_page);
+        assert_eq!(page_number, 1);
+        assert_eq!(last_page_number, 2);
+
+        correct_page; 
+        page_number = 5;
+        last_page_number = page_number +5 ;
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 16, last_page_number);
+        assert!(!correct_page);
+        assert_eq!(page_number, 4);
+        assert_eq!(last_page_number, 5);
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 63, last_page_number);
+        assert!(correct_page);
+        assert_eq!(page_number, 4);
+        assert_eq!(last_page_number, 5);
+    }
+
+    #[test] //println!("############# {correct_page} {page_number} {last_page_number}");
+    fn test_max() {
+        let mut correct_page; 
+        let mut page_number = 2;
+        let mut last_page_number = page_number + 5;
+        // loop_1
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 32, last_page_number);
+        assert!(!correct_page);
+        assert_eq!(page_number, 3);
+        assert_eq!(last_page_number, 2);
+        // loop_2
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 16, last_page_number);
+        assert!(!correct_page);
+        assert_eq!(page_number, 2);
+        assert_eq!(last_page_number, 3);
+        // loop_3
+        (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, 32, last_page_number);
+        assert!(correct_page);
+        assert_eq!(page_number, 2);
+        assert_eq!(last_page_number, 3);
+
+        // this tec could be done with 3 named tuple in vec
+    }
+
+    #[test]
+    fn test_1_up_to_max() {
+
+    }
+
+    #[test]
+    fn test_1_down_to_max() {
+        
+    }
+
 }
+
