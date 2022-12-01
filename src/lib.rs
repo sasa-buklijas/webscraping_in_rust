@@ -42,9 +42,9 @@ impl TzhParser {
         // there are few strategies for it
             // option_1: is to start from 1, and increment by one until you found it
         
-        let mut page_number:u8 = 6;
+        let mut page_number:usize = 6;
         println!("0:::page_number={page_number}");
-        let mut found = false;
+        let mut correct_page = false;
         let mut last_page_number = page_number + 5; 
         loop {
             let url:&str = &format!("{}&to_page={}", TzhParser::URL, page_number);
@@ -54,50 +54,54 @@ impl TzhParser {
             let document = Html::parse_document(&body);
 
             let number_of_items = TzhParser::number_of_items_on_page(&document);
-            // default per page is 16 on 29/11/2022
-            let max_number_of_items_for_page_number: usize = usize::from(page_number) * 16;
-            let min_number_of_items_for_page_number = max_number_of_items_for_page_number - 16;
-
-            if number_of_items == max_number_of_items_for_page_number {
-                if last_page_number == page_number + 1 {
-                    println!("1:::special_case.");
-                    found = true;
-                }
-                else {
-                    println!("1:::page {page_number} there is more than {number_of_items} items on sale.");
-                    last_page_number = page_number;
-                    page_number = page_number + 1;
-                }
-            }
-            // between check
-            else if number_of_items > min_number_of_items_for_page_number && number_of_items < max_number_of_items_for_page_number {
-                println!("2:::page is {} with {} items", page_number, number_of_items);
-                found = true;
-            }
-            else if number_of_items == 16 {
-                if page_number == 1 {
-                    last_page_number = page_number;
-                    page_number = page_number + 1;
-                    println!("3:::page_number +1 to page_number={page_number}");
-                }
-                else {
-                    last_page_number = page_number;
-                    page_number = page_number - 1;
-                    println!("3:::page_number -1 to page_number={page_number}");
-                }
-
-            }
-            else {
-                eprintln!("ERROR number_of_items={number_of_items}, this is UNEXPECTED, CHECK !!!");
-                process::exit(1);
-
-            }
-
-            if found {
+            (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, number_of_items, last_page_number);
+            if correct_page {
                 return document
             }
         }
 
+    }
+
+    fn is_correct_page(mut page_number:usize, number_of_items:usize, mut last_page_number:usize) -> (bool, usize, usize) {
+        let max_number_of_items_for_page_number: usize = usize::from(page_number) * 16;
+        let min_number_of_items_for_page_number = max_number_of_items_for_page_number - 16;
+        let mut found = false;
+
+        if number_of_items == max_number_of_items_for_page_number {
+            if last_page_number == page_number + 1 {
+                println!("1:::special_case.");
+                found = true;
+            }
+            else {
+                println!("1:::page {page_number} there is more than {number_of_items} items on sale.");
+                last_page_number = page_number;
+                page_number = page_number + 1;
+            }
+        }
+        // between check
+        else if number_of_items > min_number_of_items_for_page_number && number_of_items < max_number_of_items_for_page_number {
+            println!("2:::page is {} with {} items", page_number, number_of_items);
+            found = true;
+        }
+        else if number_of_items == 16 {
+            if page_number == 1 {
+                last_page_number = page_number;
+                page_number = page_number + 1;
+                println!("3:::page_number +1 to page_number={page_number}");
+            }
+            else {
+                last_page_number = page_number;
+                page_number = page_number - 1;
+                println!("3:::page_number -1 to page_number={page_number}");
+            }
+        }
+        else {
+            eprintln!("ERROR number_of_items={number_of_items}, this is UNEXPECTED, CHECK !!!");
+            process::exit(1);
+        }
+
+        (found, page_number, last_page_number)
+       
     }
 
     pub fn get_items(&self) -> Vec<Item> {
@@ -168,5 +172,18 @@ impl TzhParser {
 
         let items = items;
         items
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_1_ok() {
+        assert!(TzhParser::is_correct_page(1, 1, 6).0);
+        assert!(TzhParser::is_correct_page(1, 8, 6).0);
+        assert!(TzhParser::is_correct_page(1, 15, 6).0);
+        assert!(!TzhParser::is_correct_page(1, 16, 6).0);   //false
     }
 }
