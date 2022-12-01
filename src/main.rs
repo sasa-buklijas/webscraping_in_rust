@@ -1,4 +1,4 @@
-use webscraping_in_rust::test_as::TzhParser;
+use webscraping_in_rust::TzhParser;
 
 fn main() {
     let p = TzhParser{};
