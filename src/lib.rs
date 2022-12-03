@@ -3,6 +3,8 @@ use scraper::{Html, Selector};
 use std::process;
 use std::thread;
 use std::time::Duration;
+use std::fs::File;
+use std::io::{Write, BufReader, BufRead};
 
 // TODO, maybe add price as separate structure
 /*struct Price {
@@ -27,6 +29,30 @@ pub struct TzhParser {
 
 impl TzhParser {
     const URL: &'static str = "https://www.tvornicazdravehrane.com/proizvodi/popusti-i-akcije/?discount__gt=0&sort=new";
+    const FILE_NAME: &'static str = "last_page.txt";
+
+    fn save(number :usize) { 
+        let mut output = File::create(TzhParser::FILE_NAME).unwrap();
+        write!(output, "{}", number).unwrap();
+    }
+
+    fn load_or(number: usize) -> usize {
+        let input_result = File::open(TzhParser::FILE_NAME);
+        let input = match input_result {
+            Ok(file) => file,
+            Err(_) => return number,    // return number if there is no file
+        };
+
+        let buffered = BufReader::new(input);
+        for line in buffered.lines() {
+            let tmp = line.unwrap();
+            let tmp = tmp.parse::<usize>().unwrap();
+            return tmp;
+        }
+        
+        // this will be returned if there is nothing in file
+        return 3;
+    }
 
     fn number_of_items_on_page(document: &Html) -> usize {
 
@@ -42,8 +68,8 @@ impl TzhParser {
         // there are few strategies for it
             // option_1: is to start from 1, and increment by one until you found it
         
-        let mut page_number:usize = 6;
-        println!("0:::page_number={page_number}");
+        let mut page_number:usize = TzhParser::load_or(6);
+        println!("STARTING_WITH:::page_number={page_number}");
         let mut correct_page: bool;
         let mut last_page_number = page_number + 5; 
         loop {
@@ -56,6 +82,7 @@ impl TzhParser {
             let number_of_items = TzhParser::number_of_items_on_page(&document);
             (correct_page, page_number, last_page_number) = TzhParser::is_correct_page(page_number, number_of_items, last_page_number);
             if correct_page {
+                TzhParser::save(page_number);
                 return document
             }
         }
